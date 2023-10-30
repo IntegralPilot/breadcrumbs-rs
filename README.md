@@ -38,7 +38,7 @@ impl LogHandler for MyLogHandler {
 init_with_handler(Box::new(MyLogHandler));
 ```
 
-Then, simply use the `log!` macro or its varients to log messages:
+Then, simply use the `log!` macro or its variants to log messages:
 ```rust
 use breadcrumbs::{log, log_level, log_channel, LogLevel};
 
@@ -55,7 +55,7 @@ log_channel!("test_channel", "Test log message");
 log!(LogLevel::Info, "test_channel", "Test log message");
 ```
 
-Access a traceback of log messages from anywhere with the `traceback!` macro or its varients:
+Access a traceback of log messages from anywhere with the `traceback!` macro or its variants:
 ```rust
 use breadcrumbs::{traceback, traceback_channel, traceback_level, LogLevel};
 
