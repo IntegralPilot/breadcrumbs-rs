@@ -14,7 +14,7 @@ Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that 
 Add the following to your `Cargo.toml`:
 ```toml
 [dependencies]
-breadcrumbs = "0.1.0"
+breadcrumbs = "0.1.1"
 ```
 
 Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
