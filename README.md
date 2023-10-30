@@ -6,7 +6,7 @@ Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that off
 - Dynamic log levels
 - Dynamic log channels
 - Seamless integration with `#![no_std]` and `#[no_panic]`
-- Multi-threading and concurrency
+- Multi-threading and concurrent logging with no special syntax
 - Easy-to-use macros
 - Support for listeners to be notified of new logs
 
@@ -14,7 +14,7 @@ Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that off
 Add the following to your `Cargo.toml`:
 ```toml
 [dependencies]
-breadcrumbs = "0.1.2"
+breadcrumbs = "0.1.3"
 ```
 
 Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
@@ -26,12 +26,14 @@ init!();
 
 You can set a custom log listener with ease by implementing the `LogListener` trait:
 ```rust
-use breadcrumbs::{init, LogListener};
+use breadcrumbs::{init, LogListener, Log, LogLevel};
 struct MyLogListener;
  
 impl LogListener for MyLogListener {
-    fn on_log(&mut self, log: breadcrumbs::Log) {
-       println!("{}", log);
+    fn on_log(&mut self, log: Log) {
+        if log.level.is_at_least(LogLevel::Warn) {
+            println!("{}", log);
+        }
     }
 }
  
@@ -84,15 +86,25 @@ pritnln!("{:?}", t);
 ## Example
 
 ```rust
-use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel};
+use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel, LogListener, Log};
+
+struct MyLogListner;
+
+impl LogListener for MyLogListner {
+    fn on_log(&mut self, log: Log) {
+        if log.level.is_at_least(LogLevel::Warn) {
+            println!("{}", log);
+        }
+    }
+}
 
 fn main() {
-    init!();
+    init!(MyLogListner);
 
     log!("Hello, world!");
     log_level!(LogLevel::Info, "Test log message");
     log_channel!("test_channel", "Test log message");
-    log!(LogLevel::Warning, "test_channel", "Test log message");
+    log!(LogLevel::Warn, "test_channel", "Test log message");
 }
 ```
 
@@ -101,16 +113,26 @@ fn main() {
 ```rust
 #![no_std]
 
-use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel};
+use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel, Log, LogListener};
 use your_crate::serial_println;
 
+struct MyLogListner;
+
+impl LogListener for MyLogListner {
+    fn on_log(&mut self, log: Log) {
+        if log.level.is_at_least(LogLevel::Warn) {
+            serial_println!("{}", log);
+        }
+    }
+}
+
 fn main() {
-    init!();
+    init!(MyLogListner);
 
     log!("Hello, world!");
     log_level!(LogLevel::Info, "Test log message");
     log_channel!("test_channel", "Test log message");
-    log!(LogLevel::Warning, "test_channel", "Test log message");
+    log!(LogLevel::Warn, "test_channel", "Test log message");
 }
 
 #[cfg(test)]

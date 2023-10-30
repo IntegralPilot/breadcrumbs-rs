@@ -1,13 +1,16 @@
+#![no_std]
+
 //! # breadcrumbs
-//! Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that offers seamless integration with `#![no_std]`, multi-threading and concurrency.
+//! Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that offers seamless integration with `#![no_std]`, `#[no_panic]` multi-threading and concurrency. 
 //! 
 //! ## Features
 //! - Beautifully-formatted traceback of logs (supporting `Display` and `Debug`)
 //! - Dynamic log levels
 //! - Dynamic log channels
-//! - Seamless integration with `#![no_std]`
-//! - Multi-threading and concurrency
+//! - Seamless integration with `#![no_std]` and `#[no_panic]`
+//! - Multi-threading and concurrent logging with no special syntax
 //! - Easy-to-use macros
+//! - Support for listeners to be notified of new logs
 
 // Import the necessary crates
 extern crate alloc;
@@ -51,13 +54,20 @@ impl core::fmt::Display for LogLevel {
 }
 impl LogLevel {
     /// Checks if the current log level is at least as severe as the provided level.
+    /// ```rust
+    /// use breadcrumbs::LogLevel;
+    /// let log_level = LogLevel::Info;
+    /// assert!(log_level.is_at_least(LogLevel::Info));
+    /// assert!(log_level.is_at_least(LogLevel::Verbose));
+    /// assert!(!log_level.is_at_least(LogLevel::Warn));
+    /// ```
     pub fn is_at_least(&self, level: LogLevel) -> bool {
-        match self {
+        match level {
             LogLevel::Verbose => true,
-            LogLevel::Info => level != LogLevel::Verbose,
-            LogLevel::Warn => level != LogLevel::Verbose && level != LogLevel::Info,
-            LogLevel::Error => level != LogLevel::Verbose && level != LogLevel::Info && level != LogLevel::Warn,
-            LogLevel::Critical => level == LogLevel::Critical,
+            LogLevel::Info => self != &LogLevel::Verbose,
+            LogLevel::Warn => self != &LogLevel::Verbose && self != &LogLevel::Info,
+            LogLevel::Error => self != &LogLevel::Verbose && self != &LogLevel::Info && self != &LogLevel::Warn,
+            LogLevel::Critical => self == &LogLevel::Critical,
         }
     }
 
@@ -458,7 +468,6 @@ mod tests {
         log_channel!("test_channel", "Test log message 2");
 
         let traceback = traceback!().to_string();
-        println!("{}", traceback);
         assert!(traceback.contains("[test_channel/Info] Test log message 2"));
         assert!(traceback.contains("[test_channel/Info] Test log message "));
         assert!(traceback.contains("[Info] Test log message"));
@@ -473,6 +482,38 @@ mod tests {
         log_level!(LogLevel::Info, "Test log message");
         log_channel!("test_channel", "Test log message");
         log!(LogLevel::Info, "test_channel", "Test log message");
+    }
+
+    struct MyLogListener2 {
+        success: bool,
+    }
+
+    impl LogListener for MyLogListener2 {
+        fn on_log(&mut self, log: Log) {
+            if log.level.is_at_least(LogLevel::Warn) {
+                self.success = true;
+            }
+        }
+    }
+
+    struct MockLogListenerWrapper2(Arc<Mutex<MyLogListener2>>);
+
+    impl LogListener for MockLogListenerWrapper2 {
+        fn on_log(&mut self, log: Log) {
+            self.0.lock().on_log(log);
+        }
+    }
+
+    #[test]
+    fn no_std_readme_example() {
+        let log_handler = Arc::new(Mutex::new(MyLogListener2 { success: false }));
+        let log_handler_wrapper = MockLogListenerWrapper2(log_handler.clone());
+
+        init!(log_handler_wrapper);
+
+        log!(LogLevel::Error, "test_channel", "Test log message");
+
+        assert!(log_handler.lock().success);
     }
 }
 
