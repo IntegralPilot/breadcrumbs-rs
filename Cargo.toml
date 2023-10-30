@@ -3,6 +3,13 @@ name = "breadcrumbs"
 version = "0.1.0"
 edition = "2021"
 authors = ["Michael Reeves <linux479@duck.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/IntegralPilot/breadcrumbs-rs"
+categories = ["development-tools::debugging"]
+readme = "README.md"
+documentation = "https://docs.rs/breadcrumbs"
+description = "A beautiful, dynamic traceback and logging library supporting #![no_std] rust."
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
