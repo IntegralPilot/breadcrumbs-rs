@@ -89,7 +89,11 @@ pub struct Log {
 
 impl core::fmt::Display for Log {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "[{}/{}] {}", self.channel, self.level, self.message)
+        if self.channel != "" {
+            return write!(f, "[{}/{}] {}", self.channel, self.level, self.message);
+        } else {
+            return write!(f, "[{}] {}", self.level, self.message)
+        }
     }
 }
 
@@ -105,41 +109,82 @@ impl Log {
 }
 
 /// A trait for handling log entries.
-pub trait LogHandler: Send + Sync {
+pub trait LogListener: Send + Sync {
     fn on_log(&mut self, log: Log);
 }
 
 lazy_static! {
     static ref LOGS: Arc<Mutex<Vec<Log>>> = Arc::new(Mutex::new(Vec::new()));
-    static ref LOG_HANDLER: Arc<Mutex<Option<Box<dyn LogHandler>>>> = Arc::new(Mutex::new(None));
+    static ref LOG_LISTENER: Arc<Mutex<Option<Box<dyn LogListener>>>> = Arc::new(Mutex::new(None));
 }
 
-/// Initializes the logging system without a handler.
+/// Initializes the logging system without a listener.
+/// Note that the `init!` macro is the preferred method to do this in the public API.
 /// ```rust
 /// use breadcrumbs::init;
 /// init();
 /// ```
 pub fn init() {
     LOGS.lock().clear();
-    *LOG_HANDLER.lock() = None;
+    *LOG_LISTENER.lock() = None;
 }
 
-/// Initializes the logging system with a handler.
+/// Initializes the logging system with a listener.
+/// Note that the `init!` macro is the preferred method to do this in the public API.
 /// ```rust
-/// use breadcrumbs::{init_with_handler, LogHandler};
-/// struct MyLogHandler;
+/// use breadcrumbs::{init_with_listener, LogListener};
+/// struct MyLogListener;
 /// 
-/// impl LogHandler for MyLogHandler {
+/// impl LogListener for MyLogListener {
 ///    fn on_log(&mut self, log: breadcrumbs::Log) {
 ///       println!("{}", log);
 ///   }
 /// }
 /// 
-/// init_with_handler(Box::new(MyLogHandler));
+/// init_with_listener(Box::new(MyLogListener));
 /// ```
-pub fn init_with_handler(handler: Box<dyn LogHandler>) {
+pub fn init_with_listener(listener: Box<dyn LogListener>) {
     LOGS.lock().clear();
-    *LOG_HANDLER.lock() = Some(handler);
+    *LOG_LISTENER.lock() = Some(listener);
+}
+
+
+/// A macro for initializing the logging system.
+/// 
+/// # Use
+/// 
+/// To initialize the logging system without a listener, do not pass any arguments.
+/// 
+/// To initialize the logging system with a listener, pass a listener implementing `LogListener` as the first argument.
+/// 
+/// # Examples
+/// 
+/// Initialize the logging system without a listener:
+/// ```
+/// use breadcrumbs::init;
+/// init!();
+/// ```
+/// 
+/// Initialize the logging system with a listener:
+/// ```
+/// use breadcrumbs::{init, LogListener};
+/// struct MyLogListener;
+/// 
+/// impl LogListener for MyLogListener {
+///   fn on_log(&mut self, log: breadcrumbs::Log) {
+///      println!("{}", log);
+///   }
+/// }
+/// 
+/// init!(MyLogListener);
+#[macro_export]
+macro_rules! init {
+    () => {
+        $crate::init()
+    };
+    ($arg1:expr) => {
+        $crate::init_with_listener(Box::new($arg1))
+    };
 }
 
 /// Logs a message with an optional log level and channel. 
@@ -151,8 +196,8 @@ pub fn init_with_handler(handler: Box<dyn LogHandler>) {
 pub fn log(level: Option<LogLevel>, channel: Option<String>, message: String) {
     let log = Log::new(channel.unwrap_or(String::from("")), level.unwrap_or(LogLevel::Info), message.clone());
     LOGS.lock().push(log.clone());
-    if let Some(handler) = &mut *LOG_HANDLER.lock() {
-        handler.on_log(Log::new(log.channel, log.level, log.message));
+    if let Some(listener) = &mut *LOG_LISTENER.lock() {
+        listener.on_log(Log::new(log.channel, log.level, log.message));
     }
 }
 
@@ -352,27 +397,27 @@ mod tests {
         assert_eq!(LogLevel::from_str("Critical"), LogLevel::Critical);
     }
 
-    // Test Log and LogHandler
-    struct MockLogHandler {
+    // Test Log and LogListener
+    struct MockLogListener {
         received_log: Option<Log>,
     }
 
-    impl MockLogHandler {
+    impl MockLogListener {
         fn new() -> Self {
-            MockLogHandler { received_log: None }
+            MockLogListener { received_log: None }
         }
     }
 
-    impl LogHandler for MockLogHandler {
+    impl LogListener for MockLogListener {
         fn on_log(&mut self, log: Log) {
             self.received_log = Some(log);
         }
     }
 
-    // Wrapper struct that implements LogHandler for Arc<Mutex<MockLogHandler>>
-    struct MockLogHandlerWrapper(Arc<Mutex<MockLogHandler>>);
+    // Wrapper struct that implements LogListener for Arc<Mutex<MockLogListener>>
+    struct MockLogListenerWrapper(Arc<Mutex<MockLogListener>>);
 
-    impl LogHandler for MockLogHandlerWrapper {
+    impl LogListener for MockLogListenerWrapper {
         fn on_log(&mut self, log: Log) {
             self.0.lock().on_log(log);
         }
@@ -380,13 +425,13 @@ mod tests {
 
     #[test]
     fn test_log_creation_and_handling() {
-        let mock_handler = Arc::new(Mutex::new(MockLogHandler::new()));
-        let mock_handler_wrapper = MockLogHandlerWrapper(mock_handler.clone());
-        init_with_handler(Box::new(mock_handler_wrapper));
+        let mock_listener = Arc::new(Mutex::new(MockLogListener::new()));
+        let mock_listener_wrapper = MockLogListenerWrapper(mock_listener.clone());
+        init!(mock_listener_wrapper);
 
         log!(LogLevel::Info, "test_channel", "Test log message");
 
-        let received_log = mock_handler.lock().received_log.clone().expect("Log not received by handler");
+        let received_log = mock_listener.lock().received_log.clone().expect("Log not received by listener");
         assert_eq!(received_log.level, LogLevel::Info);
         assert_eq!(received_log.channel, "test_channel");
         assert_eq!(received_log.message, "Test log message");
@@ -416,13 +461,13 @@ mod tests {
         println!("{}", traceback);
         assert!(traceback.contains("[test_channel/Info] Test log message 2"));
         assert!(traceback.contains("[test_channel/Info] Test log message "));
-        assert!(traceback.contains("[/Info] Test log message"));
+        assert!(traceback.contains("[Info] Test log message"));
     }
 
     // Test the example in the README
     #[test]
     fn read_me_example() {
-        init();
+        init!();
 
         log!("Hello, world!");
         log_level!(LogLevel::Info, "Test log message");

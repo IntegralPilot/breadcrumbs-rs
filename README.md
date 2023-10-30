@@ -1,14 +1,14 @@
 # breadcrumbs
-Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that offers seamless integration with `#![no_std]`, multi-threading and concurrency.
+Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that offers seamless integration with `#![no_std]`, `#[no_panic]` multi-threading and concurrency.
 
 ## Features
-- [x] `#![no_std]` support
-- [x] Multi-threading and concurrency support
-- [x] Live streaming of logs
-- [x] Customisable log handling
-- [x] Varied logging levels
-- [x] Customisable logging *'channels'*
-- [x] Out-of-the-box traceback and log formatting
+- Beautifully-formatted traceback of logs (supporting `Display` and `Debug`)
+- Dynamic log levels
+- Dynamic log channels
+- Seamless integration with `#![no_std]` and `#[no_panic]`
+- Multi-threading and concurrency
+- Easy-to-use macros
+- Support for listeners to be notified of new logs
 
 ## Usage
 Add the following to your `Cargo.toml`:
@@ -21,24 +21,24 @@ Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
 ```rust
 use breadcrumbs::init;
 
-init();
+init!();
 ```
 
-You can set a custom log handler with ease by implementing the `LogHandler` trait:
+You can set a custom log listener with ease by implementing the `LogListener` trait:
 ```rust
-use breadcrumbs::{init_with_handler, LogHandler};
-struct MyLogHandler;
+use breadcrumbs::{init, LogListener};
+struct MyLogListener;
  
-impl LogHandler for MyLogHandler {
+impl LogListener for MyLogListener {
     fn on_log(&mut self, log: breadcrumbs::Log) {
        println!("{}", log);
     }
 }
  
-init_with_handler(Box::new(MyLogHandler));
+init!(MyLogListener);
 ```
 
-Then, simply use the `log!` macro or its variants to log messages:
+Then, simply use the `log!` macro from or its variants from anywhere to log messages:
 ```rust
 use breadcrumbs::{log, log_level, log_channel, LogLevel};
 
@@ -78,6 +78,7 @@ use breadcrumbs::traceback;
 
 let t = traceback!();
 println!("{}", t);
+pritnln!("{:?}", t);
 ```
 
 ## Example
@@ -86,12 +87,30 @@ println!("{}", t);
 use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel};
 
 fn main() {
-    init();
+    init!();
 
     log!("Hello, world!");
     log_level!(LogLevel::Info, "Test log message");
     log_channel!("test_channel", "Test log message");
-    log!(LogLevel::Info, "test_channel", "Test log message");
+    log!(LogLevel::Warning, "test_channel", "Test log message");
+}
+```
+
+## `#![no_std]` Example Usecase
+
+```rust
+#![no_std]
+
+use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel};
+use your_crate::serial_println;
+
+fn main() {
+    init!();
+
+    log!("Hello, world!");
+    log_level!(LogLevel::Info, "Test log message");
+    log_channel!("test_channel", "Test log message");
+    log!(LogLevel::Warning, "test_channel", "Test log message");
 }
 
 #[cfg(test)]
@@ -100,7 +119,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     log!(LogLevel::Critical, "PANIC!");
 
     let t = traceback!();
-    println!("{}", t);
+    serial_println!("{}", t);
 
     loop {}
 }
