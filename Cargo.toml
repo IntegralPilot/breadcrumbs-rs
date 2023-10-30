@@ -1,6 +1,6 @@
 [package]
 name = "breadcrumbs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Michael Reeves <linux479@duck.com>"]
 license = "Apache-2.0"
@@ -8,13 +8,13 @@ repository = "https://github.com/IntegralPilot/breadcrumbs-rs"
 categories = ["development-tools::debugging"]
 readme = "README.md"
 documentation = "https://docs.rs/breadcrumbs"
-description = "A beautiful, dynamic traceback and logging library supporting #![no_std] rust."
+description = "A beautiful, tiny traceback and logging library supporting #![no_std] rust."
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-spin = "0.5.2"
+spin = "0.9.8"
 
 [dependencies.lazy_static]
 version = "1.0"

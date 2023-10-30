@@ -1,5 +1,5 @@
 # breadcrumbs
-Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that offers seamless integration with `#![no_std]`, `#[no_panic]` multi-threading and concurrency.
+Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that offers seamless integration with `#![no_std]`, `#[no_panic]` multi-threading and concurrency. 
 
 ## Features
 - Beautifully-formatted traceback of logs (supporting `Display` and `Debug`)
@@ -14,7 +14,7 @@ Breadcrumbs is a beautiful, dynamic traceback and logging library for Rust that 
 Add the following to your `Cargo.toml`:
 ```toml
 [dependencies]
-breadcrumbs = "0.1.1"
+breadcrumbs = "0.1.2"
 ```
 
 Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
