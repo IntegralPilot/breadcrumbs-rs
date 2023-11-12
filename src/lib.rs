@@ -193,6 +193,8 @@ macro_rules! init {
         $crate::init()
     };
     ($arg1:expr) => {
+        extern crate alloc;
+        use alloc::boxed::Box;
         $crate::init_with_listener(Box::new($arg1))
     };
 }

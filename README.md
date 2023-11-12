@@ -1,12 +1,12 @@
 # breadcrumbs
-Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that offers seamless integration with `#![no_std]`, `#[no_panic]` multi-threading and concurrency. 
+Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that offers seamless integration with `#![no_std]`, multi-threading and concurrency. 
 
 ## Features
 - Beautifully-formatted traceback of logs (supporting `Display` and `Debug`)
 - Dynamic log levels
 - Dynamic log channels
-- Seamless integration with `#![no_std]` and `#[no_panic]`
-- Multi-threading and concurrent logging with no special syntax
+- Seamless integration with `#![no_std]`
+- Multi-threading and concurrent logging supported with no special syntax
 - Easy-to-use macros
 - Support for listeners to be notified of new logs
 
@@ -14,7 +14,7 @@ Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that off
 Add the following to your `Cargo.toml`:
 ```toml
 [dependencies]
-breadcrumbs = "0.1.3"
+breadcrumbs = "0.1.4"
 ```
 
 Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
@@ -27,6 +27,7 @@ init!();
 You can set a custom log listener with ease by implementing the `LogListener` trait:
 ```rust
 use breadcrumbs::{init, LogListener, Log, LogLevel};
+
 struct MyLogListener;
  
 impl LogListener for MyLogListener {
@@ -80,7 +81,7 @@ use breadcrumbs::traceback;
 
 let t = traceback!();
 println!("{}", t);
-pritnln!("{:?}", t);
+println!("{:?}", t);
 ```
 
 ## Example
@@ -105,44 +106,8 @@ fn main() {
     log_level!(LogLevel::Info, "Test log message");
     log_channel!("test_channel", "Test log message");
     log!(LogLevel::Warn, "test_channel", "Test log message");
-}
-```
-
-## `#![no_std]` Example Usecase
-
-```rust
-#![no_std]
-
-use breadcrumbs::{init, log, log_level, log_channel, traceback, LogLevel, Log, LogListener};
-use your_crate::serial_println;
-
-struct MyLogListner;
-
-impl LogListener for MyLogListner {
-    fn on_log(&mut self, log: Log) {
-        if log.level.is_at_least(LogLevel::Warn) {
-            serial_println!("{}", log);
-        }
-    }
-}
-
-fn main() {
-    init!(MyLogListner);
-
-    log!("Hello, world!");
-    log_level!(LogLevel::Info, "Test log message");
-    log_channel!("test_channel", "Test log message");
-    log!(LogLevel::Warn, "test_channel", "Test log message");
-}
-
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo) -> ! {
-    log!(LogLevel::Critical, "PANIC!");
 
     let t = traceback!();
-    serial_println!("{}", t);
-
-    loop {}
+    println!("Fatal Error! Traceback:\n{}", t);
 }
 ```
