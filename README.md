@@ -14,7 +14,7 @@ Breadcrumbs is a beautiful, tiny traceback and logging library for Rust that off
 Add the following to your `Cargo.toml`:
 ```toml
 [dependencies]
-breadcrumbs = "0.1.4"
+breadcrumbs = "0.1.5"
 ```
 
 Then, initalize `breadcrumbs` once in your `main.rs` or `lib.rs`:
@@ -34,6 +34,10 @@ impl LogListener for MyLogListener {
     fn on_log(&mut self, log: Log) {
         if log.level.is_at_least(LogLevel::Warn) {
             println!("{}", log);
+        } else {
+            // 💡 New in 0.1.5 - Remove unnecessary logs to save memory
+            // Useful in embedded usecases
+            log.remove();
         }
     }
 }

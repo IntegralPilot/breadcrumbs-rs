@@ -1,6 +1,6 @@
 [package]
 name = "breadcrumbs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 authors = ["Michael Reeves <linux479@duck.com>"]
 license = "Apache-2.0"

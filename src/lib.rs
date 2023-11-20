@@ -116,6 +116,28 @@ impl Log {
             message,
         }
     }
+    /// Removes the log from the stored traceback of logs.
+    /// This log will not use up memory or be printed by the traceback macros.
+    /// Useful in embedded systems where memory is limited.
+    /// 
+    /// # Example Usecase
+    /// ```rust
+    /// use breadcrumbs::{LogListener, Log};
+    /// 
+    /// struct MyLogListener;
+    /// impl LogListener for MyLogListener {
+    ///     fn on_log(&mut self, log: Log) {
+    ///         if !log.level.is_at_least(breadcrumbs::LogLevel::Warn) {
+    ///             log.remove();
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    pub fn remove(&self) {
+        let mut logs = LOGS.lock();
+        let index = logs.iter().position(|log| log == self).unwrap();
+        logs.remove(index);
+    }
 }
 
 /// A trait for handling log entries.
